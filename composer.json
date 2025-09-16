@@ -1,0 +1,32 @@
+{
+  "name": "arrowpay/arrowbaze",
+  "description": "Laravel package for Orange Money Webpay (ArrowBaze)",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ArrowBaze",
+      "email": "hello@arrowbaze.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Arrowpay\\ArrowBaze\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Arrowpay\\ArrowBaze\\ArrowBazeServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=8.0",
+    "illuminate/support": "^8.0|^9.0|^10.0|^12.0",
+    "illuminate/http": "^8.0|^9.0|^10.0|^12.0",
+    "guzzlehttp/guzzle": "^7.0"
+}
+}
