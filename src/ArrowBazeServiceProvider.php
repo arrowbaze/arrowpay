@@ -26,15 +26,19 @@ class ArrowBazeServiceProvider extends ServiceProvider
         // Load routes
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
-        // Validate license on boot (enforces domain binding and single license usage)
-        License::bootFromConfig();
+        // ✅ Delay license validation until application is fully booted
+        $this->app->booted(function () {
+            if (config('arrowbaze.license_key')) {
+                License::bootFromConfig();
+            }
+        });
     }
 
     public function register()
     {
         // Merge package config with app config
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/arrowbaze.php', 
+            __DIR__ . '/../config/arrowbaze.php',
             'arrowbaze'
         );
 
