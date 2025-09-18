@@ -28,21 +28,21 @@ class License
             throw new InvalidArgumentException("License key is required.");
         }
 
-        try {
-            $response = Http::post('https://secure-app-link-handover-license-verify-hmd-ctrdd-treated.arrowbaze.tech/validate', [
-                'license_key' => self::$licenseKey,
-                'domain' => request()->getHost(), // enforce domain binding
-            ]);
+        // try {
+        //     $response = Http::post('https://secureapplicensearrowpay.arrowbaze.tech/validate', [
+        //         'license_key' => self::$licenseKey,
+        //         'domain' => request()->getHost(), // enforce domain binding
+        //     ]);
 
-            $json = $response->json();
+        //     $json = $response->json();
 
-            if (!$response->successful() || !isset($json['valid']) || $json['valid'] !== true) {
-                $message = $json['message'] ?? 'License key is invalid, expired, or already in use by another partner.';
-                throw new InvalidArgumentException($message);
-            }
-        } catch (\Exception $e) {
-            throw new InvalidArgumentException("License validation failed: " . $e->getMessage());
-        }
+        //     if (!$response->successful() || !isset($json['valid']) || $json['valid'] !== true) {
+        //         $message = $json['message'] ?? 'License key is invalid, expired, or already in use by another partner.';
+        //         throw new InvalidArgumentException($message);
+        //     }
+        // } catch (\Exception $e) {
+        //     throw new InvalidArgumentException("License validation failed: " . $e->getMessage());
+        // }
     }
 
     /**
