@@ -1,11 +1,9 @@
 <?php
 
-
 namespace Arrowpay\ArrowBaze;
 
-
 use Illuminate\Support\ServiceProvider;
-
+use Arrowpay\ArrowBaze\Helpers\License;
 
 class ArrowBazeServiceProvider extends ServiceProvider
 {
@@ -13,37 +11,36 @@ class ArrowBazeServiceProvider extends ServiceProvider
     {
         // Publish config
         $this->publishes([
-        __DIR__.'/../config/arrowbaze.php' => config_path('arrowbaze.php'),
+            __DIR__ . '/../config/arrowbaze.php' => config_path('arrowbaze.php'),
         ], 'config');
 
-
-        // Publish migration
+        // Publish migration if not exists
         if (! class_exists('CreateArrowbazeTokensTable')) {
-        $this->publishes([
-        __DIR__.'/../database/migrations/2025_01_01_000000_create_arrowbaze_tokens_table.php' => database_path('migrations/'.date('Y_m_d_His', time()).'_create_arrowbaze_tokens_table.php'),
-        ], 'migrations');
+            $timestamp = date('Y_m_d_His', time());
+            $this->publishes([
+                __DIR__ . '/../database/migrations/2025_01_01_000000_create_arrowbaze_tokens_table.php' 
+                    => database_path("migrations/{$timestamp}_create_arrowbaze_tokens_table.php"),
+            ], 'migrations');
         }
 
-
-        // Publish views
-        $this->loadViewsFrom(__DIR__.'/../publishable/views', 'arrowbaze');
-        $this->publishes([
-        __DIR__.'/../publishable/views' => resource_path('views/vendor/arrowbaze')
-        ], 'views');
-
-
         // Load routes
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-    }
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
+        // Validate license on boot (enforces domain binding and single license usage)
+        License::bootFromConfig();
+    }
 
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/arrowbaze.php', 'arrowbaze');
+        // Merge package config with app config
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/arrowbaze.php', 
+            'arrowbaze'
+        );
 
-
+        // Bind ArrowBaze to the service container
         $this->app->singleton('arrowbaze', function ($app) {
-        return new ArrowBaze();
+            return new ArrowBaze();
         });
     }
 }

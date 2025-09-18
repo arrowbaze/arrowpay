@@ -1,11 +1,38 @@
 <?php
 
-
 use Illuminate\Support\Facades\Route;
-use Arrowpay\ArrowBaze\Http\Controllers\WebpayController;
+use Arrowpay\ArrowBaze\ArrowBaze;
 
+/*
+|--------------------------------------------------------------------------
+| ArrowBaze Routes
+|--------------------------------------------------------------------------
+| All ArrowPay routes are prefixed with "arrowbaze".
+| 
+*/
 
-Route::post(config('arrowbaze.routes.notify'), [WebpayController::class, 'notify'])->name('arrowbaze.notify');
-Route::get(config('arrowbaze.routes.return'), [WebpayController::class, 'paymentReturn'])->name('arrowbaze.return');
-Route::get(config('arrowbaze.routes.cancel'), [WebpayController::class, 'paymentCancel'])->name('arrowbaze.cancel');
-Route::post('/arrowbaze/initialize', [WebpayController::class, 'initialize'])->name('arrowbaze.initialize');
+Route::prefix('arrowbaze')->group(function () {
+
+    // Initialize a payment
+    Route::post('initialize', [ArrowBaze::class, 'initializePayment'])
+        ->name('arrowbaze.initialize');
+
+    // Payment return callback
+    Route::get('return/{orderId}', function (string $orderId) {
+        $service = app(ArrowBaze::class);
+        return $service->paymentReturn($orderId);
+    })->name('arrowbaze.return');
+
+    // Payment cancel callback
+    Route::get('cancel', function () {
+        $service = app(ArrowBaze::class);
+        return $service->paymentCancel();
+    })->name('arrowbaze.cancel');
+
+    // Payment notification callback
+    Route::post('notify', function (Illuminate\Http\Request $request) {
+        $service = app(ArrowBaze::class);
+        return $service->notify($request);
+    })->name('arrowbaze.notify');
+});
+

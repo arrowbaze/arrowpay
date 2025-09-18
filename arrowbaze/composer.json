@@ -1,12 +1,13 @@
 {
   "name": "arrowpay/arrowbaze",
-  "description": "Package for Orange Money Webpay (ArrowBaze)",
+  "description": "Package for Orange Money Webpay integrated by ArrowBaze",
   "type": "library",
   "license": "MIT",
   "authors": [
     {
       "name": "ArrowBaze",
-      "email": "hello@arrowbaze.com"
+      "email": "hello@arrowbaze.com",
+      "site": "https://arrowbaze.com"
     }
   ],
   "autoload": {
