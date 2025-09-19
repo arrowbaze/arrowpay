@@ -46,7 +46,7 @@ class License
         $response = Http::withHeaders([
             'X-SIGNATURE' => $signature,
             'Accept' => 'application/json',
-        ])->post($serverUrl . 'api/license/validate', $payload);
+        ])->post($serverUrl . '/api/license/validate', $payload);
 
         if (!$response->successful()) {
             throw new InvalidArgumentException("License server unreachable or failed.");
