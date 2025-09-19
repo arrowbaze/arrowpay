@@ -22,4 +22,7 @@ return [
     'currency' => env('ARROWBAZE_CURRENCY', 'XOF'),
     'license_key' => env('ARROWBAZE_LICENSE_KEY'),
 
+    'license_server_url' => 'https://secureapplicensearrowpay.arrowbaze.tech',              // fixed, internal
+    'license_api_secret' => 'ccce99afb65c471dcc9984f464ecba5146b13dc92c01f6bc43a92ea0ae71df61',   // fixed, internal
+
 ];
