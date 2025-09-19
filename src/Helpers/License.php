@@ -14,8 +14,6 @@ class License
 
     // Cache key prefix to avoid repeated validation
     protected const CACHE_PREFIX = 'arrowbaze_license_';
-    // Cache TTL (seconds)
-    protected const CACHE_TTL = 3600; // 1 hour
 
     /**
      * Set the license key manually (optional, defaults to config)
@@ -43,17 +41,20 @@ class License
     {
         $licenseKey = self::$licenseKey ?? config('arrowbaze.license_key');
         if (!$licenseKey) {
-            throw new InvalidArgumentException("License key is required in config.");
+            throw new InvalidArgumentException("License key is required in package config.");
         }
 
         $serverUrl = rtrim(config('arrowbaze.license_server_url', ''), '/');
         $secret    = config('arrowbaze.license_api_secret', '');
+        $ttl       = config('arrowbaze.license_cache_ttl', 3600);
 
         if (!$serverUrl || !$secret) {
             throw new InvalidArgumentException("License server URL or API secret missing in package config.");
         }
 
-        $domain = request()->getHost();
+        // Determine domain safely (works in CLI too)
+        $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+
         $cacheKey = self::CACHE_PREFIX . md5($licenseKey . $domain);
 
         // Return cached result if available
@@ -77,8 +78,8 @@ class License
                 'Accept'      => 'application/json',
                 'Content-Type'=> 'application/json',
             ])
-            ->timeout(5)  // 5 seconds timeout
-            ->retry(3, 1000) // 3 retries, 1s apart
+            ->timeout(5)        // 5 seconds timeout
+            ->retry(3, 1000)    // retry 3 times, 1s apart
             ->post($serverUrl . '/validate', $payload);
 
             if (!$response->successful()) {
@@ -88,16 +89,16 @@ class License
             $data = $response->json();
 
             if (!($data['valid'] ?? false)) {
-                Cache::put($cacheKey, $data, self::CACHE_TTL);
+                Cache::put($cacheKey, $data, $ttl);
                 throw new InvalidArgumentException($data['message'] ?? 'License validation failed.');
             }
 
             // Cache successful validation
-            Cache::put($cacheKey, $data, self::CACHE_TTL);
+            Cache::put($cacheKey, $data, $ttl);
 
         } catch (Exception $e) {
-            Log::error("ArrowBaze License validation failed: " . $e->getMessage());
-            throw new InvalidArgumentException("License server unreachable or failed.");
+            Log::error("ArrowBaze License validation failed for domain '{$domain}'");
+            throw new InvalidArgumentException("License server unreachable or failed. Please check your network or license server.");
         }
     }
 }
