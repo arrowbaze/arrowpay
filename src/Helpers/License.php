@@ -53,7 +53,9 @@ class License
         }
 
         // Determine domain safely (works in CLI too)
-        $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+        // $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+
+                $domain = 'arrowbaze.tech';
 
         $cacheKey = self::CACHE_PREFIX . md5($licenseKey . $domain);
 
