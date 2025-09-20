@@ -53,9 +53,9 @@ class License
         }
 
         // Determine domain safely (works in CLI too)
-        // $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+        $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
 
-                $domain = 'arrowbaze.tech';
+        Log::error("Domain found '{$domain}'");
 
         $cacheKey = self::CACHE_PREFIX . md5($licenseKey . $domain);
 
@@ -74,33 +74,45 @@ class License
 
         $signature = hash_hmac('sha256', $payload, $secret);
 
-        try {
-            $response = Http::withHeaders([
-                'X-SIGNATURE' => $signature,
-                'Accept'      => 'application/json',
-                'Content-Type'=> 'application/json',
-            ])
-            ->timeout(5)        // 5 seconds timeout
-            ->retry(3, 1000)    // retry 3 times, 1s apart
-            ->post($serverUrl . '/validate', $payload);
+       try {
+    $response = Http::withHeaders([
+        'X-SIGNATURE' => $signature,
+        'Accept'      => 'application/json',
+        'Content-Type'=> 'application/json',
+    ])
+    ->timeout(5)        // 5 seconds timeout
+    ->retry(3, 1000)    // retry 3 times, 1s apart
+    ->post($serverUrl . '/validate', $payload);
 
-            if (!$response->successful()) {
-                throw new Exception("HTTP error: {$response->status()}");
-            }
+    if (!$response->successful()) {
+        Log::error("ArrowBaze License server HTTP error", [
+            'status' => $response->status(),
+            'body' => $response->body()
+        ]);
+        throw new Exception("HTTP error: {$response->status()}");
+    }
 
-            $data = $response->json();
+    $data = $response->json();
 
-            if (!($data['valid'] ?? false)) {
-                Cache::put($cacheKey, $data, $ttl);
-                throw new InvalidArgumentException($data['message'] ?? 'License validation failed.');
-            }
+    if (!($data['valid'] ?? false)) {
+        Cache::put($cacheKey, $data, $ttl);
+        Log::error("ArrowBaze License validation failed", [
+            'domain' => $domain,
+            'response' => $data
+        ]);
+        throw new InvalidArgumentException($data['message'] ?? 'License validation failed.');
+    }
 
-            // Cache successful validation
-            Cache::put($cacheKey, $data, $ttl);
+    // Cache successful validation
+    Cache::put($cacheKey, $data, $ttl);
 
-        } catch (Exception $e) {
-            Log::error("ArrowBaze License validation failed for domain '{$domain}'");
-            throw new InvalidArgumentException("License server unreachable or failed. Please check your network or license server.");
-        }
+} catch (Exception $e) {
+    Log::error("ArrowBaze License request exception for domain '{$domain}': " . $e->getMessage());
+    if (isset($response)) {
+        Log::error("Response body: " . $response->body());
+    }
+    throw new InvalidArgumentException("License server unreachable or failed. Please check your network or license server.");
+}
+
     }
 }
