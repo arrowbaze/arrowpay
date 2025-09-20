@@ -12,7 +12,6 @@ class License
 {
     protected static ?string $licenseKey = null;
 
-    // Cache key prefix to avoid repeated validation
     protected const CACHE_PREFIX = 'arrowbaze_license_';
 
     /**
@@ -52,10 +51,9 @@ class License
             throw new InvalidArgumentException("License server URL or API secret missing in package config.");
         }
 
-        // Determine domain safely (works in CLI too)
         $domain = request()?->getHost() ?? parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
 
-        Log::error("Domain found '{$domain}'");
+        Log::debug("Domain found '{$domain}'");
 
         $cacheKey = self::CACHE_PREFIX . md5($licenseKey . $domain);
 
@@ -67,52 +65,53 @@ class License
             return;
         }
 
-        $payload = json_encode([
+        $payload = [
             'license_key' => $licenseKey,
             'domain'      => $domain,
-        ]);
+        ];
 
-        $signature = hash_hmac('sha256', $payload, $secret);
+        // Compute HMAC on **JSON-encoded payload**
+        $jsonPayload = json_encode($payload);
+        $signature = hash_hmac('sha256', $jsonPayload, $secret);
 
-       try {
-    $response = Http::withHeaders([
-        'X-SIGNATURE' => $signature,
-        'Accept'      => 'application/json',
-        'Content-Type'=> 'application/json',
-    ])
-    ->timeout(5)        // 5 seconds timeout
-    ->retry(3, 1000)    // retry 3 times, 1s apart
-    ->post($serverUrl . '/validate', $payload);
+        try {
+            $response = Http::withHeaders([
+                'X-SIGNATURE' => $signature,
+                'Accept'      => 'application/json',
+                'Content-Type'=> 'application/json',
+            ])
+            ->timeout(5)
+            ->retry(3, 1000)
+            // **Send raw JSON body to avoid extra quotes**
+            ->send('POST', $serverUrl . '/validate', ['body' => $jsonPayload]);
 
-    if (!$response->successful()) {
-        Log::error("ArrowBaze License server HTTP error", [
-            'status' => $response->status(),
-            'body' => $response->body()
-        ]);
-        throw new Exception("HTTP error: {$response->status()}");
-    }
+            if (!$response->successful()) {
+                Log::error("ArrowBaze License server HTTP error", [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                throw new Exception("HTTP error: {$response->status()}");
+            }
 
-    $data = $response->json();
+            $data = $response->json();
 
-    if (!($data['valid'] ?? false)) {
-        Cache::put($cacheKey, $data, $ttl);
-        Log::error("ArrowBaze License validation failed", [
-            'domain' => $domain,
-            'response' => $data
-        ]);
-        throw new InvalidArgumentException($data['message'] ?? 'License validation failed.');
-    }
+            if (!($data['valid'] ?? false)) {
+                Cache::put($cacheKey, $data, $ttl);
+                Log::warning("ArrowBaze License validation failed", [
+                    'domain' => $domain,
+                    'response' => $data
+                ]);
+                throw new InvalidArgumentException($data['message'] ?? 'License validation failed.');
+            }
 
-    // Cache successful validation
-    Cache::put($cacheKey, $data, $ttl);
+            Cache::put($cacheKey, $data, $ttl);
 
-} catch (Exception $e) {
-    Log::error("ArrowBaze License request exception for domain '{$domain}': " . $e->getMessage());
-    if (isset($response)) {
-        Log::error("Response body: " . $response->body());
-    }
-    throw new InvalidArgumentException("License server unreachable or failed. Please check your network or license server.");
-}
-
+        } catch (Exception $e) {
+            Log::error("ArrowBaze License request exception for domain '{$domain}': " . $e->getMessage());
+            if (isset($response)) {
+                Log::error("Response body: " . $response->body());
+            }
+            throw new InvalidArgumentException("License server unreachable or failed. Please check your network or license server.");
+        }
     }
 }
