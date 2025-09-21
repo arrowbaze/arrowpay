@@ -5,6 +5,8 @@ ArrowPay est un **package PHP** qui intègre **Orange Money Webpay** dans vos ap
 
 ---
 
+Avant d’utiliser ce package, demandez une **clé de licence** à **ArrowBAZE** via [arrowbaze.com/contact](https://arrowbaze.com/contact).
+
 ## 🚀 Installation
 
 Installer le package via Composer :
@@ -15,15 +17,17 @@ composer require arrowpay/arrowbaze
 
 ---
 
-## ⚙️ Publication de la configuration
+## ⚙️ Publication de la configuration & migrations
 
-Après l’installation, publiez le fichier de configuration :
+Après l’installation, publiez les fichiers nécessaires (configuration + migrations) :
+
+### 1. Publier la configuration
 
 ```bash
 php artisan vendor:publish --provider="Arrowpay\ArrowBaze\ArrowBazeServiceProvider" --tag=config
 ```
 
-Cela va créer :
+Cela va créer le fichier suivant :
 
 ```
 config/arrowbaze.php
@@ -31,9 +35,30 @@ config/arrowbaze.php
 
 ---
 
-## 🔑 Configuration
+### 2. Publier la migration
 
-Avant d’utiliser le package, demandez une **clé de licence** à **ArrowBAZE** via [arrowbaze.com/contact](https://arrowbaze.com/contact).
+```bash
+php artisan vendor:publish --provider="Arrowpay\ArrowBaze\ArrowBazeServiceProvider" --tag=migrations
+```
+
+Cela va créer le fichier de migration correspondant dans :
+
+```
+database/migrations/xxxx_xx_xx_xxxxxx_create_arrowbaze_tokens_table.php
+```
+
+---
+
+### 3. Exécuter la migration
+
+```bash
+php artisan migrate
+```
+
+Ceci va créer la table nécessaire pour stocker les tokens de vos paiements.
+---
+
+## 🔑 Configuration
 
 Mettez à jour votre fichier `.env` :
 
